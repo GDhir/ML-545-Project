@@ -20,11 +20,11 @@ def read_data():
     scaler = MinMaxScaler()
     N_train = np.int(len(y[:,0])*0.8) #Number of train data
     x_train = scaler.fit_transform(x[:N_train,:])
-    x_test = scaler.fit_transform(x[N_train:,:])
+    x_test = scaler.transform(x[N_train:,:])
     y_train = y[:N_train,:]
     y_test = y[N_train:,:]
     y_train_n =scaler.fit_transform(y_train)
-    y_test_n = scaler.fit_transform(y_test)
+    y_test_n = scaler.transform(y_test)
     return x_train, y_train_n, x_test, y_test_n , y_train, y_test
 
 def denormalize(df,norm_data):
@@ -38,14 +38,14 @@ def hidden_layer(prev_layer,n_neur):
     W = tf.Variable(tf.random_uniform([n_neur,n_neur]))
     b = tf.Variable(tf.zeros([n_neur]))
     layer = tf.add(tf.matmul(prev_layer,W), b)
-    layer = tf.nn.elu(layer) #activation function
+    layer = tf.nn.relu(layer) #activation function
     return W, b, layer
 
 def neural_net_model_1(X_data,input_dim,n_neur=10):
     W_1 = tf.Variable(tf.random_uniform([input_dim,n_neur]))
     b_1 = tf.Variable(tf.zeros([n_neur]))
     layer_1 = tf.add(tf.matmul(X_data,W_1), b_1)
-    layer_1 = tf.nn.elu(layer_1) #activation function
+    layer_1 = tf.nn.relu(layer_1) #activation function
 
     # layer 1 multiplying and adding bias then activation function
     W_2,b_2,layer_2 = hidden_layer(layer_1,n_neur)
