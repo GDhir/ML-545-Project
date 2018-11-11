@@ -3,17 +3,41 @@ import numpy as np
 import tensorflow as tf
 import matplotlib.pyplot as plt
 import time
-from functions import read_data
 from NN_airofil import *
+from sklearn.preprocessing import MinMaxScaler
+
+def read_data():
+    """
+    xy0, xy1, xy2 represent files corresponding to three outputs (CL, CM and CD)
+    xy0:
+    x: (x_geo (7 thickness, 7 cmaber) Ma, alpha),
+    y: (CL), CM, CD,
+    pCL/px, pCM/px, pCD/px
+    """
+    xy0 = np.loadtxt('M0CFDdata.txt')
+    xy1 = np.loadtxt('M1CFDdata.txt')
+    xy2 = np.loadtxt('M2CFDdata.txt')
+    xy = np.concatenate((np.concatenate((xy0, xy1)), xy2))
+    dim = 16
+    x = xy[:, :dim]
+    y = xy[:, dim:dim+3]
+    scaler = MinMaxScaler()
+    N_train = np.int(len(y[:,0])*0.8) #Number of train data
+    x_train = scaler.fit_transform(x[:N_train,:])
+    x_test = scaler.transform(x[N_train:,:])
+    y_train = y[:N_train,:]
+    y_test = y[N_train:,:]
+    return x_train, y_train, x_test, y_test 
 
 
 def generate_batches(X, y, batch_size, shuffle=False):
     X_copy = np.array(X) 
     y_copy = np.array(y)
     if shuffle:
-        index = np.random.shuffle(range(len(y)))
-        X_copy = X_copy[index,:]
-        y_copy = y_copy[index]
+        data = np.column_stack((X_copy, y_copy))
+        np.random.shuffle(data)
+        X_copy = data[:,:-1]
+        y_copy = data[:,-1].reshape((-1,1))
     for i in range(0, X.shape[0], batch_size):
         yield (X_copy[i:i+batch_size,:], y_copy[i:i+batch_size])
 
