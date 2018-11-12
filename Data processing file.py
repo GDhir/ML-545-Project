@@ -16,7 +16,7 @@ xy = np.concatenate((np.concatenate((xy0, xy1)), xy2))
 
 dim = 16
 x = xy[:, :dim]
-y = xy[:, dim:dim+1]
+y = xy[:, dim+1:dim+2]
 print(max(x[:,-1]))
 print(min(x[:,-1]))
 print(max(x[:,-2]))
