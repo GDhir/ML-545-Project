@@ -45,13 +45,13 @@ def generate_batches(X, y, batch_size, shuffle=False):
     for i in range(0, X.shape[0], batch_size):
         yield (X_copy[i:i+batch_size,:], y_copy[i:i+batch_size])
 
-def train_NN(sess, model, X_train, y_train, num_epochs = 100):
+def train_NN(sess, model, X_train, y_train, num_epochs = 100, shuffle=False):
     sess.run(model.init_op)
     training_cost = []
     start = time.time()
     batch_size = int(X_train.shape[0]*0.05)
     for i in range(num_epochs):
-        batch_generator = generate_batches(X_train, y_train, batch_size)
+        batch_generator = generate_batches(X_train, y_train, batch_size, shuffle)
         for batch_x, batch_y in batch_generator:
             feed = {model.X: batch_x, model.y: batch_y}
             _, cost = sess.run([model.optimizer, model.cost], feed_dict=feed)
@@ -63,8 +63,8 @@ def train_NN(sess, model, X_train, y_train, num_epochs = 100):
     total_time = end-start
     return training_cost, total_time
 
-def generate_NN(sess, model, name, X_train, y_train, X_test, y_test, y_ok, y_test_ok,epochs=100, save=False):
-    train_cost, time = train_NN(sess, model, X_train, y_train, num_epochs=epochs)
+def generate_NN(sess, model, name, X_train, y_train, X_test, y_test, y_ok, y_test_ok,epochs=100, save=False, shuffle=False):
+    train_cost, time = train_NN(sess, model, X_train, y_train, num_epochs=epochs, shuffle=shuffle)
     test_cost = sess.run(model.cost, feed_dict= {model.X:X_test, model.y: y_test})
     y_pred = sess.run(model.network, feed_dict={model.X: X_test})
     y_pred_ok = denormalize(y_ok, y_pred)
@@ -96,12 +96,12 @@ def generate_NN(sess, model, name, X_train, y_train, X_test, y_test, y_ok, y_tes
     fig3 = plt.figure(figsize=(9,4))
     plt.subplot(1,2,1)
     plt.plot(range(len(y_test)), y_test-y_pred)
-    plt.xlabel('Cases')
+    plt.xlabel('Test Data')
     plt.ylabel('Error '+name)
     plt.title('Normalized data')
     plt.subplot(1,2,2)
     plt.plot(range(len(y_test)), y_test_ok-y_pred_ok)
-    plt.xlabel('Cases')
+    plt.xlabel('Test Data')
     plt.title('Actual data')
     plt.show()
     if save:
@@ -131,6 +131,7 @@ def denormalize(y, y_normalized):
 
 
 X_train, y_train, X_test, y_test, y_train_ok, y_test_ok = read_data() #Read de data
+
 Cl_train = np.reshape(y_train[:,0],[-1,1])
 Cl_test = np.reshape(y_test[:,0],[-1,1])
 Cl_ok = np.reshape(y_train_ok[:,0],[-1,1])
@@ -146,8 +147,6 @@ Cd_test = np.reshape(y_test[:,2],[-1,1])
 Cd_ok = np.reshape(y_train_ok[:,2],[-1,1])
 Cd_test_ok = np.reshape(y_test_ok[:,2],[-1,1])
 
-#%%
-print(min(Cm_test_ok))
 #%%
 n_l = [1, 2, 3, 4, 5, 6, 7]
 cost_t = []
@@ -224,18 +223,18 @@ plt.savefig('./data/time_nneu.pdf')
 #%%
 
 alpha = .001
-n_neur = 300
+n_neur = 80
 n_layers = 3 
-epc = 20
+epc = 300
 
 model_Cd = NeuralAirfoil(N_hlayers=n_layers, n_neur=n_neur, learning_rate=alpha)
 sess_Cd = tf.Session(graph = model_Cd.g)
-generate_NN(sess_Cd, model_Cd, 'Cd', X_train, Cd_train, X_test, Cd_test, Cd_ok, Cd_test_ok, epc, True)
+generate_NN(sess_Cd, model_Cd, 'Cd', X_train, Cd_train, X_test, Cd_test, Cd_ok, Cd_test_ok, epc, True, True)
 
 model_Cl = NeuralAirfoil(N_hlayers=n_layers, n_neur=n_neur, learning_rate=alpha)
 sess_Cl = tf.Session(graph = model_Cl.g)
-generate_NN(sess_Cl, model_Cl, 'Cl', X_train, Cl_train, X_test, Cl_test,Cl_ok, Cl_test_ok, epc, True)
+generate_NN(sess_Cl, model_Cl, 'Cl', X_train, Cl_train, X_test, Cl_test,Cl_ok, Cl_test_ok, epc, True, True)
 
 model_Cm = NeuralAirfoil(N_hlayers=n_layers, n_neur=n_neur, learning_rate=alpha)
 sess_Cm = tf.Session(graph = model_Cm.g)
-generate_NN(sess_Cm, model_Cm, 'Cm', X_train, Cm_train, X_test, Cm_test,Cm_ok, Cm_test_ok, epc, True)
+generate_NN(sess_Cm, model_Cm, 'Cm', X_train, Cm_train, X_test, Cm_test,Cm_ok, Cm_test_ok, epc, True, True)
