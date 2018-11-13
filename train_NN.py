@@ -1,4 +1,4 @@
-#%%S
+#%%
 import numpy as np
 import tensorflow as tf
 import matplotlib.pyplot as plt
@@ -71,10 +71,14 @@ def generate_NN(sess, model, name, X_train, y_train, X_test, y_test, y_ok, y_tes
     print('Time [min]:', time/60)
     print('MSE', test_cost)
 
-    fig1 = plt.figure()
+    fig1 = plt.figure(figsize=(9,4))
+    plt.subplot(1,2,1)
     plt.semilogy(range(len(train_cost)),train_cost)
     plt.xlabel('Epoch')
     plt.ylabel('Training Cost')
+    plt.subplot(1,2,2)
+    plt.plot(range(len(train_cost)),train_cost)
+    plt.xlabel('Epoch')
     plt.show()
 
     fig2 = plt.figure(figsize=(9,4))
@@ -104,6 +108,16 @@ def generate_NN(sess, model, name, X_train, y_train, X_test, y_test, y_ok, y_tes
     plt.xlabel('Test Data')
     plt.title('Actual data')
     plt.show()
+    print('Relative Error %:',np.sqrt(np.sum((y_test_ok-y_pred_ok)**2))/np.sqrt(np.sum(y_test_ok**2))*100)
+    # fig4 = plt.figure()
+    # plt.plot(range(len(y_test)), (y_test_ok-y_pred_ok)/y_test_ok*100)
+    # plt.xlabel('Test Data')
+    # plt.title('Actual data')
+    # plt.ylabel('% Error '+name)
+    # plt.show()
+
+   
+
     if save:
         save_path = model.saver.save(sess,"./data/NN_"+name+".ckpt")
 
@@ -151,7 +165,7 @@ Cd_test_ok = np.reshape(y_test_ok[:,2],[-1,1])
 n_l = [1, 2, 3, 4, 5, 6, 7]
 cost_t = []
 time_t = []
-n_neur = 50 
+n_neur = 80 
 alpha = 0.001
 K_folds = 3
 batch_size_p = int(X_train.shape[0]/K_folds)+1
@@ -164,7 +178,7 @@ for i in range(len(n_l)):
         model = NeuralAirfoil(N_hlayers=n_l[i], n_neur=n_neur, learning_rate=alpha)
         sess = tf.Session(graph = model.g)
         c , t = train_NN(sess, model, batch_x, batch_y, num_epochs=100)
-        cost_i = cost_i + c[-1]
+        cost_i = cost_i + np.mean(np.asarray(c[-9:]))
         time_i = time_i + t
     cost_t.append(cost_i)
     time_t.append(time_i)
@@ -187,9 +201,11 @@ plt.savefig('./data/time_nhl.pdf')
 n_neur = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120]
 # cost_t = []
 # time_t = []
-n_hl = 3 
+n_hl = 2
 alpha = 0.001
 K_folds = 3
+cost_t = []
+time_t = []
 batch_size_p = int(X_train.shape[0]/K_folds)+1
 for i in range(len(n_neur)):
     batch_generator = generate_batches(X_train, Cd_train, batch_size_p)
@@ -200,7 +216,7 @@ for i in range(len(n_neur)):
         model = NeuralAirfoil(N_hlayers=n_hl, n_neur=n_neur[i], learning_rate=alpha)
         sess = tf.Session(graph = model.g)
         c , t = train_NN(sess, model, batch_x, batch_y, num_epochs=100)
-        cost_i = cost_i + c[-1]
+        cost_i = cost_i + np.mean(np.asarray(c[-10:]))
         time_i = time_i + t
     cost_t.append(cost_i)
     time_t.append(time_i)
@@ -223,9 +239,9 @@ plt.savefig('./data/time_nneu.pdf')
 #%%
 
 alpha = .001
-n_neur = 80
-n_layers = 3 
-epc = 300
+n_neur = 60
+n_layers = 2 
+epc = 500
 
 model_Cd = NeuralAirfoil(N_hlayers=n_layers, n_neur=n_neur, learning_rate=alpha)
 sess_Cd = tf.Session(graph = model_Cd.g)
