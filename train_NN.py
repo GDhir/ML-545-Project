@@ -45,105 +45,6 @@ def generate_batches(X, y, batch_size, shuffle=False):
     for i in range(0, X.shape[0], batch_size):
         yield (X_copy[i:i+batch_size,:], y_copy[i:i+batch_size])
 
-def train_NN(sess, model, X_train, y_train, num_epochs = 100, shuffle=False):
-    sess.run(model.init_op)
-    training_cost = []
-    start = time.time()
-    batch_size = int(X_train.shape[0]*0.05)
-    for i in range(num_epochs):
-        batch_generator = generate_batches(X_train, y_train, batch_size, shuffle)
-        for batch_x, batch_y in batch_generator:
-            feed = {model.X: batch_x, model.y: batch_y}
-            _, cost = sess.run([model.optimizer, model.cost], feed_dict=feed)
-        training_cost.append(cost)
-        print('Epoch: ', i+1, 'Training cost: ', training_cost[-1])
-    
-    print('NN trained')
-    end = time.time()
-    total_time = end-start
-    return training_cost, total_time
-
-def generate_NN(sess, model, name, X_train, y_train, X_test, y_test, y_ok, y_test_ok,epochs=100, save=False, shuffle=False):
-    train_cost, time = train_NN(sess, model, X_train, y_train, num_epochs=epochs, shuffle=shuffle)
-    test_cost = sess.run(model.cost, feed_dict= {model.X:X_test, model.y: y_test})
-    y_pred = sess.run(model.network, feed_dict={model.X: X_test})
-    y_pred_ok = denormalize(y_ok, y_pred)
-    print('Time [min]:', time/60)
-    print('MSE', test_cost)
-
-    fig1 = plt.figure(figsize=(9,4))
-    plt.subplot(1,2,1)
-    plt.semilogy(range(len(train_cost)),train_cost)
-    plt.xlabel('Epoch')
-    plt.ylabel('Training Cost')
-    plt.subplot(1,2,2)
-    plt.plot(range(len(train_cost)),train_cost)
-    plt.xlabel('Epoch')
-    plt.show()
-
-    fig2 = plt.figure(figsize=(9,4))
-    plt.subplot(1,2,1)
-    plt.plot(range(len(y_test)), y_test, label= name +' Test')
-    plt.plot(range(len(y_test)), y_pred, label=name + ' Predicted')
-    plt.xlabel('Test Data')
-    plt.ylabel(name)
-    plt.title('Normalized data')
-    plt.legend()
-    plt.subplot(1,2,2)
-    plt.plot(range(len(y_test)), y_test_ok, label= name +' Test')
-    plt.plot(range(len(y_test)), y_pred_ok, label=name + ' Predicted')
-    plt.xlabel('Test Data')
-    plt.title('Actual data')
-    plt.legend()
-    plt.show()
-        
-    fig3 = plt.figure(figsize=(9,4))
-    plt.subplot(1,2,1)
-    plt.plot(range(len(y_test)), y_test-y_pred)
-    plt.xlabel('Test Data')
-    plt.ylabel('Error '+name)
-    plt.title('Normalized data')
-    plt.subplot(1,2,2)
-    plt.plot(range(len(y_test)), y_test_ok-y_pred_ok)
-    plt.xlabel('Test Data')
-    plt.title('Actual data')
-    plt.show()
-    print('Relative Error %:',np.sqrt(np.sum((y_test_ok-y_pred_ok)**2))/np.sqrt(np.sum(y_test_ok**2))*100)
-    # fig4 = plt.figure()
-    # plt.plot(range(len(y_test)), (y_test_ok-y_pred_ok)/y_test_ok*100)
-    # plt.xlabel('Test Data')
-    # plt.title('Actual data')
-    # plt.ylabel('% Error '+name)
-    # plt.show()
-
-   
-
-    if save:
-        save_path = model.saver.save(sess,"./data/NN_"+name+".ckpt")
-
-        fig1.savefig('./data/training_cost'+name+'.pdf',bbox_inches='tight')
-        fig2.savefig('./data/compare'+name+'.pdf',bbox_inches='tight')
-        fig3.savefig('./data/error'+name+'.pdf',bbox_inches='tight')
-
-        f = open("./data/"+name,"w+")
-        f.write("%5.8f \n" %alpha)
-        f.write("%5.8f \n" %n_neur)
-        f.write("%5.8f \n" %n_layers)
-        f.write("%5.8f \n"%test_cost)
-        f.write("%5.8f \n"%time)
-        for item in train_cost:
-            f.write("%s " % item)
-        f.close()
-
-def denormalize(y, y_normalized):
-    y = y.reshape(-1,1)
-    y_normalized = y_normalized.reshape(-1,1)
-    scl = MinMaxScaler()
-    a = scl.fit_transform(y)
-    new = scl.inverse_transform(y_normalized)
-    return new
-
-
 X_train, y_train, X_test, y_test, y_train_ok, y_test_ok = read_data() #Read de data
 
 Cl_train = np.reshape(y_train[:,0],[-1,1])
@@ -177,7 +78,7 @@ for i in range(len(n_l)):
     for batch_x, batch_y in batch_generator:
         model = NeuralAirfoil(N_hlayers=n_l[i], n_neur=n_neur, learning_rate=alpha)
         sess = tf.Session(graph = model.g)
-        c , t = train_NN(sess, model, batch_x, batch_y, num_epochs=100)
+        c , t = train_NN(batch_x, batch_y, num_epochs=100)
         cost_i = cost_i + np.mean(np.asarray(c[-9:]))
         time_i = time_i + t
     cost_t.append(cost_i)
@@ -214,8 +115,7 @@ for i in range(len(n_neur)):
     print('=================',n_neur[i],'Neurons =================')
     for batch_x, batch_y in batch_generator:
         model = NeuralAirfoil(N_hlayers=n_hl, n_neur=n_neur[i], learning_rate=alpha)
-        sess = tf.Session(graph = model.g)
-        c , t = train_NN(sess, model, batch_x, batch_y, num_epochs=100)
+        model.train_NN(sess, model, batch_x, batch_y, num_epochs=100)
         cost_i = cost_i + np.mean(np.asarray(c[-10:]))
         time_i = time_i + t
     cost_t.append(cost_i)
@@ -236,21 +136,3 @@ plt.ylabel('Time [min]')
 plt.savefig('./data/time_nneu.pdf')
 
 
-#%%
-
-alpha = .001
-n_neur = 60
-n_layers = 2 
-epc = 500
-
-model_Cd = NeuralAirfoil(N_hlayers=n_layers, n_neur=n_neur, learning_rate=alpha)
-sess_Cd = tf.Session(graph = model_Cd.g)
-generate_NN(sess_Cd, model_Cd, 'Cd', X_train, Cd_train, X_test, Cd_test, Cd_ok, Cd_test_ok, epc, True, True)
-
-model_Cl = NeuralAirfoil(N_hlayers=n_layers, n_neur=n_neur, learning_rate=alpha)
-sess_Cl = tf.Session(graph = model_Cl.g)
-generate_NN(sess_Cl, model_Cl, 'Cl', X_train, Cl_train, X_test, Cl_test,Cl_ok, Cl_test_ok, epc, True, True)
-
-model_Cm = NeuralAirfoil(N_hlayers=n_layers, n_neur=n_neur, learning_rate=alpha)
-sess_Cm = tf.Session(graph = model_Cm.g)
-generate_NN(sess_Cm, model_Cm, 'Cm', X_train, Cm_train, X_test, Cm_test,Cm_ok, Cm_test_ok, epc, True, True)
