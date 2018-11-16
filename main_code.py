@@ -51,22 +51,27 @@ Cd_test_ok = np.reshape(y_test_ok[:,2],[-1,1])
 alpha = .001
 n_neur = 60
 n_layers = 3
-epc = 600
+epc = 5000
+save = True
 
 model_Cd = NeuralAirfoil(N_hlayers=n_layers, n_neur=n_neur, learning_rate=alpha, num_epochs=epc)
 model_Cd.train_NN(X_train, Cd_train, X_test, Cd_test, Cd_ok, Cd_test_ok)
-model_Cd.generate_plot('Cd', show=True, save=True)
+model_Cd.generate_plot('Cd', show=True, save=save)
 print('Relative error test %',model_Cd.R_error_test[-1])
 print('Relative error train %',model_Cd.R_error_train[-1])
 
-model_Cl = NeuralAirfoil(N_hlayers=n_layers, n_neur=n_neur, learning_rate=alpha, num_epochs=epc)
-model_Cl.train_NN(X_train, Cl_train, X_test, Cl_test, Cl_ok, Cl_test_ok)
-model_Cl.generate_plot('Cl', show=True, save=True)
-print('Relative error test %',model_Cl.R_error_test[-1])
-print('Relative error train %',model_Cl.R_error_train[-1])
+
 
 model_Cm = NeuralAirfoil(N_hlayers=n_layers, n_neur=n_neur, learning_rate=alpha, num_epochs=epc)
 model_Cm.train_NN(X_train, Cm_train, X_test, Cm_test, Cm_ok, Cm_test_ok)
-model_Cm.generate_plot('Cm', show=True, save=True)
+model_Cm.generate_plot('Cm', show=True, save=save)
 print('Relative error test %',model_Cm.R_error_test[-1])
 print('Relative error train %',model_Cm.R_error_train[-1])
+
+alpha = .01
+
+model_Cl = NeuralAirfoil(N_hlayers=n_layers, n_neur=n_neur, learning_rate=alpha, num_epochs=epc)
+model_Cl.train_NN(X_train, Cl_train, X_test, Cl_test, Cl_ok, Cl_test_ok)
+model_Cl.generate_plot('Cl', show=True, save=save)
+print('Relative error test %',model_Cl.R_error_test[-1])
+print('Relative error train %',model_Cl.R_error_train[-1])
