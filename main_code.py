@@ -16,6 +16,7 @@ def read_data():
     xy1 = np.loadtxt('M1CFDdata.txt')
     xy2 = np.loadtxt('M2CFDdata.txt')
     xy = np.concatenate((np.concatenate((xy0, xy1)), xy2))
+    #shuffle the data, because it has some pattern
     np.random.shuffle(xy)
     dim = 16
     x = xy[:, :dim]
@@ -24,8 +25,8 @@ def read_data():
     y_train_ok = y[:N_train,:]
     y_test_ok = y[N_train:,:]
     scaler = MinMaxScaler()
-    x_train = scaler.fit_transform(x[:N_train,:])
-    x_test = scaler.transform(x[N_train:,:])
+    x_train = scaler.fit_transform(x[:N_train,:]) #normalize the X_train
+    x_test = scaler.transform(x[N_train:,:]) #normalize the X_test
     y_train_n = scaler.fit_transform(y[:N_train,:]) #normalized data
     y_test_n = scaler.transform(y[N_train:,:]) #normalized data
     return x_train, y_train_n, x_test, y_test_n, y_train_ok, y_test_ok
@@ -54,8 +55,11 @@ n_layers = 3
 epc = 5000
 save = True
 
+#create NN for Cd
 model_Cd = NeuralAirfoil(N_hlayers=n_layers, n_neur=n_neur, learning_rate=alpha, num_epochs=epc)
+#Train the NN for Cd
 model_Cd.train_NN(X_train, Cd_train, X_test, Cd_test, Cd_ok, Cd_test_ok)
+#generate the plots for Cd
 model_Cd.generate_plot('Cd', show=True, save=save)
 print('Relative error test %',model_Cd.R_error_test[-1])
 print('Relative error train %',model_Cd.R_error_train[-1])
