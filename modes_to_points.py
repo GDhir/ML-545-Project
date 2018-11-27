@@ -19,11 +19,3 @@ for i in range(N_data):
 new_data[:,N_points:N_points+5] = xy[:,14:19]
 np.savetxt('new_data.txt',new_data)
 np.savetxt('x_geom.txt',x)
-#%%
-new = np.loadtxt('new_data.txt')
-x = np.loadtxt('x_geom.txt')
-#%%
-i = 10000
-plt.plot(x, new[i,0:281])
-plt.axis('equal')
-print(new[i,281:])

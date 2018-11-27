@@ -5,41 +5,6 @@ import matplotlib.pyplot as plt
 from NN_airofil import NeuralAirfoil
 from sklearn.preprocessing import MinMaxScaler
 
-def read_data():
-    """
-    xy0, xy1, xy2 represent files corresponding to three outputs (CL, CM and CD)
-    xy0:
-    x: (x_geo (7 thickness, 7 cmaber) Ma, alpha),
-    y: (CL), CM, CD,
-    pCL/px, pCM/px, pCD/px (?? not sure about the order)
-    """
-    np.random.seed(0)
-    xy0 = np.loadtxt('M0CFDdata.txt')
-    xy1 = np.loadtxt('M1CFDdata.txt')
-    xy2 = np.loadtxt('M2CFDdata.txt')
-    xy = np.concatenate((np.concatenate((xy0, xy1)), xy2))
-    #shuffle the data, because it has some pattern
-    np.random.shuffle(xy)
-    dim = 16
-    x = xy[:, :dim]
-    y = xy[:, dim:dim+3]
-    N_train = np.int(len(y[:,0])*0.8) #Number of train data
-    y_train_ok = y[:N_train,:]
-    y_test_ok = y[N_train:,:]
-    scaler = MinMaxScaler()
-    x_train = scaler.fit_transform(x[:N_train,:]) #normalize the X_train
-    x_test = scaler.transform(x[N_train:,:]) #normalize the X_test
-    y_train_n = scaler.fit_transform(y[:N_train,:]) #normalized data
-    y_test_n = scaler.transform(y[N_train:,:]) #normalized data
-    return x_train, y_train_n, x_test, y_test_n, y_train_ok, y_test_ok
-
-X_train, y_train, X_test, y_test, y_train_ok, y_test_ok = read_data() #Read de data
-
-Cd_train = np.reshape(y_train[:,2],[-1,1])
-Cd_test = np.reshape(y_test[:,2],[-1,1])
-Cd_test_ok = np.reshape(y_test_ok[:,2],[-1,1])
-Cd_train_ok = np.reshape(y_train_ok[:,2],[-1,1])
-
 
 l_rate = .001
 n_neur = 60
@@ -49,38 +14,19 @@ y_dim = 1
 epc = 300
 save = False
 
-def Cd(x):
-        model_Cd = NeuralAirfoil(x_dim = x_dim, N_hlayers=n_layers, n_neur=n_neur, learning_rate=l_rate, num_epochs=epc)
-        saver = model_Cd.saver
-        with tf.Session(graph=model_Cd.g) as session:   
-                #Load NN
-                saver.restore(session, './data/NN_Cd.ckpt')
-                # Evalute test data
-                pred = session.run(model_Cd.network,feed_dict={model_Cd.X:x})
-        session.close()
-        return pred
+model = NeuralAirfoil(x_dim = x_dim, N_hlayers=n_layers, n_neur=n_neur, learning_rate=l_rate, num_epochs=epc)
 
-def Cl(x):
-        model_Cl = NeuralAirfoil(x_dim = x_dim, N_hlayers=n_layers, n_neur=n_neur, learning_rate=l_rate, num_epochs=epc)
-        saver = model_Cl.saver
-        with tf.Session(graph=model_Cl.g) as session:   
-                #Load NN
-                saver.restore(session, './data/NN_Cl.ckpt')
-                # Evalute test data
-                pred = session.run(model_Cl.network,feed_dict={model_Cl.X:x})
-        session.close()
-        return pred
+saver_Cd = model.saver
+session_Cd = tf.Session(graph=model.g)
+saver_Cd.restore(session_Cd,'./data/NN_Cd.ckpt')
 
-def Cm(x):
-        model_Cm = NeuralAirfoil(x_dim = x_dim, N_hlayers=n_layers, n_neur=n_neur, learning_rate=l_rate, num_epochs=epc)
-        saver = model_Cm.saver
-        with tf.Session(graph=model_Cm.g) as session:   
-                #Load NN
-                saver.restore(session, './data/NN_Cm.ckpt')
-                # Evalute test data
-                pred = session.run(model_Cm.network,feed_dict={model_Cm.X:x})
-        session.close()
-        return pred
+saver_Cl = model.saver
+session_Cl = tf.Session(graph=model.g)
+saver_Cl.restore(session_Cl,'./data/NN_Cl.ckpt')
+
+saver_Cm = model.saver
+session_Cm = tf.Session(graph=model.g)
+saver_Cm.restore(session_Cm,'./data/NN_Cm.ckpt')
 
 
 def denormalize_y(y, var):
@@ -115,13 +61,13 @@ for i in range(len(alpha)):
         x_eval[i,15] = alpha[i]
 x_eval = normalize_x(x_eval)
 
-pred_Cd = Cd(x_eval)
+pred_Cd = session_Cd.run(model.network,feed_dict={model.X:x_eval})
 pred_Cd = denormalize_y(pred_Cd, 1)
 
-pred_Cl = Cl(x_eval)
+pred_Cl = session_Cl.run(model.network,feed_dict={model.X:x_eval})
 pred_Cl = denormalize_y(pred_Cl, 0)
 
-pred_Cm = Cm(x_eval)
+pred_Cm = session_Cm.run(model.network,feed_dict={model.X:x_eval})
 pred_Cm = -denormalize_y(pred_Cm, 2)
 
 f = plt.figure(figsize=(25,5))

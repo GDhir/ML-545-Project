@@ -112,7 +112,7 @@ class NeuralAirfoil(object):
 
     def generate_batches(self):
         """
-        Function to create the batches 
+        Function to create  batches 
         """
         X_copy = np.array(self.X_train) 
         y_copy = np.array(self.y_train)
