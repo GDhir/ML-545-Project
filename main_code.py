@@ -34,23 +34,6 @@ def read_data():
     y_test_n = scaler.transform(y[N_train:,:]) #normalized data
     return x_train, y_train_n, x_test, y_test_n, y_train_ok, y_test_ok
 
-def read_newdata():
-    np.random.seed(0)
-    xy = np.loadtxt('new_data.txt')
-    np.random.shuffle(xy)
-    dim = 281+2 #281 points + Mach number + angle of attack 
-    x = xy[:, :dim]
-    y = xy[:, dim:dim+3]
-    N_train = np.int(len(y[:,0])*0.8) #Number of train data
-    y_train_ok = y[:N_train,:]
-    y_test_ok = y[N_train:,:]
-    scaler = MinMaxScaler()
-    x_train = scaler.fit_transform(x[:N_train,:]) #normalize the X_train
-    x_test = scaler.transform(x[N_train:,:]) #normalize the X_test
-    y_train_n = scaler.fit_transform(y[:N_train,:]) #normalized data
-    y_test_n = scaler.transform(y[N_train:,:]) #normalized data
-    return x_train, y_train_n, x_test, y_test_n, y_train_ok, y_test_ok
-
 
 X_train, y_train, X_test, y_test, y_train_ok, y_test_ok = read_data() #Read de data
 
