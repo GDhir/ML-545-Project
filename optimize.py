@@ -4,7 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from NN_airofil import NeuralAirfoil
 from sklearn.preprocessing import MinMaxScaler
-from scipy.optimize import minimize
+import scipy.optimize as scopt
 
 basedata = np.loadtxt('basis.txt') 
 x_geom = basedata[0,:].copy()
@@ -103,27 +103,46 @@ def Cl(x_in):
     pred = session_Cl.run(model.network,feed_dict={model.X:x})
     return np.asscalar(pred)
 
-con1 = {'type': 'ineq', 'fun': lambda x:  thickness(x)[0]-thickness_constraint[0]}
-con2 = {'type': 'ineq', 'fun': lambda x:  thickness(x)[1]-thickness_constraint[1]}
-con3 = {'type': 'ineq', 'fun': lambda x:  thickness(x)[2]-thickness_constraint[2]}
-con4 = {'type': 'ineq', 'fun': lambda x:  thickness(x)[3]-thickness_constraint[3]}
-con5 = {'type': 'ineq', 'fun': lambda x:  thickness(x)[4]-thickness_constraint[4]}
-con6 = {'type': 'eq', 'fun': lambda x: Cl(x) - Cl_req}
+def c1(x):
+    return thickness(x)[0]-thickness_constraint[0]
+def c2(x):
+    return thickness(x)[1]-thickness_constraint[1]
+def c3(x):
+    return thickness(x)[2]-thickness_constraint[2]
+def c4(x):
+    return thickness(x)[3]-thickness_constraint[3]
+def c5(x):
+    return thickness(x)[4]-thickness_constraint[4]
+def c6(x):
+    return Cl(x) - Cl_req
 
-cons = [con1,con2,con3,con4,con5,con6]
+con1 = {'type': 'ineq', 'fun': c1}
+con2 = {'type': 'ineq', 'fun': c2}
+con3 = {'type': 'ineq', 'fun': c3}
+con4 = {'type': 'ineq', 'fun': c4}
+con5 = {'type': 'ineq', 'fun': c5}
+con6 = {'type': 'eq', 'fun': c6}
+
+cons = (con1,con2,con3,con4,con5,con6)
+eqcons = [c6]
+ineqcons  = [c1,c2,c3,c4,c5]
 #%%
 x0_t = np.zeros(16)
-x0_t[0:14] = airfoil
+x0_t[:14] = airfoil
 x0_t[14] = Mach
 x0_t[15] = 2
 x0_t = normalize_x(x0_t)
 x0 = np.zeros(15)
-x0[0:14] = x0_t[0,0:14]
+x0[0:14] = x0_t[0,:14]
 x0[14] = x0_t[0,15]
 Mach_n = x0_t[0,14]
-
+print(Cd(x0))
+print(denormalize_y(np.array([Cl(x0)]),0))
 tol = 1e-8
-sol = minimize(Cd, x0, method='SLSQP', tol = tol, constraints=cons, options={'disp': True})
+
+#%%
+sol = scopt.minimize(Cd, x0, method='SLSQP',constraints =cons ,tol=tol, options={'disp': True})
+# sol = scopt.fmin_slsqp(Cd, x0, eqcons=eqcons, ieqcons = ineqcons)
 
 print(sol.success)
 print(denormalize_y(np.array([sol.fun]),1))
@@ -134,6 +153,7 @@ sol_opt[15] = sol.x[14]
 sol_opt[14] = Mach_n
 sol_opt = denormalize_x(sol_opt)
 print(sol_opt)
+print(airfoil)
 #%%
 y_opt = np.dot(sol_opt[0,0:14],U)
 plt.figure()
