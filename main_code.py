@@ -58,7 +58,7 @@ alpha = .001
 n_neur = 60
 n_layers = 2
 x_dim  = 16#281+2
-epc = 100
+epc = 1000
 save = False
 
 #create NN for Cd
@@ -70,7 +70,7 @@ model_Cd.generate_plot('Cd', show=True, save=save)
 print('Relative error test %',model_Cd.R_error_test[-1])
 print('Relative error train %',model_Cd.R_error_train[-1])
 
-
+#%%
 model_Cm = NeuralAirfoil(x_dim = x_dim, N_hlayers=n_layers, n_neur=n_neur, learning_rate=alpha, num_epochs=epc)
 model_Cm.train_NN(X_train, Cm_train, X_test, Cm_test, Cm_ok, Cm_test_ok)
 model_Cm.generate_plot('Cm', show=True, save=save)
