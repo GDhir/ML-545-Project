@@ -31,11 +31,28 @@ class NeuralAirfoil(object):
     
     def model(self):
 
-        self.X = tf.placeholder(dtype=tf.float32, shape=(None,self.x_dim), name='X')
+        self.X = tf.placeholder(dtype=tf.float32, shape=[None,280], name='X')
+        self.extra = tf.placeholder(dtype=tf.float32, shape=(None,2), name='extra')        
         self.y = tf.placeholder(dtype=tf.float32, shape=(None, self.y_dim), name='y')
-        
+        x_1 = self.X[:,0:140]
+        x_2 = tf.reverse(self.X[:,140:], [0])
+        print(x_2.get_shape())
+        x_input = tf.concat([x_1,x_2], 1)
+
+        conv1 = tf.layers.conv2d(inputs=tf.reshape(x_input,[-1,2,140,1]), filters=4, kernel_size=[2,2], 
+            padding='same', activation=self.activation_function)
+        print(conv1.get_shape())
+        pool1 = tf.layers.max_pooling2d(inputs=conv1, pool_size = [1,4], strides=[1,4])
+        print(pool1.get_shape())
+        conv2 = tf.layers.conv2d(inputs= pool1, filters=8, kernel_size=[2,2], 
+            padding='same', activation=self.activation_function)
+        print(conv2.get_shape())
+        pool2 = tf.layers.max_pooling2d(inputs=conv2, pool_size = [2,5], strides=[2,5])
+        print(pool2.get_shape())
+        pool2_flat  = tf.reshape(pool2,[-1,7*8] )
+        input_NN = tf.concat([pool2_flat, self.extra],1)
         #input layer
-        layer_1 = tf.layers.dense(inputs=self.X, units=self.n_neur, activation = self.activation_function,
+        layer_1 = tf.layers.dense(inputs=input_NN, units=self.n_neur, activation = self.activation_function,
                                   name = 'layer1')
         
         d = {'layer_1':layer_1} #dictionary for the layer
@@ -79,17 +96,21 @@ class NeuralAirfoil(object):
         start = time.time() 
         #batch size used during the optimization
         self.batch_size = int(self.X_train.shape[0]*0.05)
+        self.x_train_points = np.concatenate((self.X_train[:,0:140],self.X_train[:,141:281]),axis=1)
+        self.feat_train_points = self.X_train[:,281:]
+        self.x_test_points = np.concatenate((self.X_test[:,0:140],self.X_test[:,141:281]),axis=1)
+        self.feat_test_points = self.X_test[:,281:] 
         # The optimization:
         for i in range(self.num_epochs):
             batch_generator = self.generate_batches()
-            for batch_x, batch_y in batch_generator:
-                feed = {self.X: batch_x, self.y: batch_y}
+            for batch_x, batch_e, batch_y in batch_generator:
+                feed = {self.X: batch_x, self.extra: batch_e, self.y: batch_y}
                 _, cost = self.sess.run([self.optimizer, self.cost], feed_dict=feed)
             
             self.training_cost.append(cost)
             
             #evaluate the NN using x_test
-            self.y_pred = self.sess.run(self.network, feed_dict={self.X: self.X_test})
+            self.y_pred = self.sess.run(self.network, feed_dict={self.X: self.x_test_points, self.extra: self.feat_test_points})
             #denormalize the prediction
             self.y_pred_ok = self.denormalize(self.y_pred)
             #compute the relative error of the test data
@@ -97,7 +118,7 @@ class NeuralAirfoil(object):
             self.R_error_test.append(error_test)
 
             #evaluate the NN using x_train
-            y_pred_train = self.sess.run(self.network, feed_dict={self.X: self.X_train})
+            y_pred_train = self.sess.run(self.network, feed_dict={self.X: self.x_train_points, self.extra: self.feat_train_points})
             #denormalize the prediction
             y_pred_train_ok = self.denormalize(y_pred_train)
             #compute the relative error of the training data
@@ -122,7 +143,7 @@ class NeuralAirfoil(object):
             X_copy = data[:,:-1]
             y_copy = data[:,-1].reshape((-1,1))
         for i in range(0, self.X_train.shape[0], self.batch_size):
-            yield (X_copy[i:i+self.batch_size,:], y_copy[i:i+self.batch_size])
+            yield (np.concatenate((X_copy[i:i+self.batch_size,:140],X_copy[i:i+self.batch_size,141:281]),axis=1),X_copy[i:i+self.batch_size,281:], y_copy[i:i+self.batch_size])
 
     def generate_plot(self, name, show=False, save=False):
         """
@@ -131,7 +152,7 @@ class NeuralAirfoil(object):
         show: show plots if True
         save: save NN, plots and a .txt file if True, using the 'name'
         """
-        self.test_cost = self.sess.run(self.cost, feed_dict= {self.X:self.X_test, self.y: self.y_test})
+        self.test_cost = self.sess.run(self.cost, feed_dict= {self.X: self.x_test_points, self.extra: self.feat_test_points, self.y: self.y_test})
     
         fig1 = plt.figure(figsize=(9,4))
         plt.subplot(1,2,1)
