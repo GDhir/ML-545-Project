@@ -48,7 +48,7 @@ alpha = .001
 n_neur = 60
 n_layers = 2
 x_dim  = 281 #y points
-epc = 10
+epc = 1000
 save = False
 show = True
 

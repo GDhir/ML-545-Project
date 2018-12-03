@@ -35,7 +35,7 @@ class NeuralAirfoil(object):
         self.extra = tf.placeholder(dtype=tf.float32, shape=(None,2), name='extra')        
         self.y = tf.placeholder(dtype=tf.float32, shape=(None, self.y_dim), name='y')
         x_1 = self.X[:,0:140]
-        x_2 = tf.reverse(self.X[:,140:], [0])
+        x_2 = tf.reverse(self.X[:,140:], [1])
         print(x_2.get_shape())
         x_input = tf.concat([x_1,x_2], 1)
 
