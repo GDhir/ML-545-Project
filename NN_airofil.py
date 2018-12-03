@@ -84,8 +84,8 @@ class NeuralAirfoil(object):
             batch_generator = self.generate_batches()
             for batch_x, batch_y in batch_generator:
                 feed = {self.X: batch_x, self.y: batch_y}
-                _, cost = self.sess.run([self.optimizer, self.cost], feed_dict=feed)
-            
+                _= self.sess.run([self.optimizer], feed_dict=feed)
+            cost = self.sess.run([self.cost], feed_dict={self.X: self.X_train, self.y: self.y_train})
             self.training_cost.append(cost)
             
             #evaluate the NN using x_test

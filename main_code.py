@@ -58,7 +58,7 @@ alpha = .001
 n_neur = 60
 n_layers = 2
 x_dim  = 16#281+2
-epc = 1000
+epc = 100
 save = False
 
 #create NN for Cd
