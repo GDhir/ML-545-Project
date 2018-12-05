@@ -53,6 +53,8 @@ class NeuralAirfoil(object):
         #optimizer
         self.optimizer = tf.train.AdamOptimizer(self.learning_rate).minimize(self.cost)
 
+        #Gradient
+        self.gradient_NN = tf.gradients(self.network, self.X)
 
     def train_NN(self, X_train, y_train, X_test, y_test, y_train_ok, y_test_ok, shuffle=False):
         """

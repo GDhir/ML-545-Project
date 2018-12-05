@@ -58,8 +58,9 @@ alpha = .001
 n_neur = 60
 n_layers = 2
 x_dim  = 16#281+2
-epc = 100
-save = False
+epc = 1000
+save = True
+show = False
 
 #create NN for Cd
 model_Cd = NeuralAirfoil(x_dim = x_dim, N_hlayers=n_layers, n_neur=n_neur, learning_rate=alpha, num_epochs=epc)

@@ -4,7 +4,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from NN_airofil import NeuralAirfoil
 from sklearn.preprocessing import MinMaxScaler
-import scipy.optimize as scopt
+import pyoptsparse
+from pyoptsparse import Optimization
 
 basedata = np.loadtxt('basis.txt') 
 x_geom = basedata[0,:].copy()
@@ -27,9 +28,7 @@ for i in range(len(x_constraint)):
     thickness_constraint.append(0.9*(y_airfoil[index[0]]-y_airfoil[index[1]]))
 
 def thickness(x):
-    x_t = np.zeros(x_dim)
-    x_t[0:14] = x[0:14]
-    x_t = denormalize_x(x_t)
+    x_t = denormalize_x(x)
     x_f  = x_t[0,0:14]
     x_new = np.dot(x_f,U)
     thickness = []
@@ -72,8 +71,7 @@ def normalize_y(y, var):
 n_neur = 60
 n_layers = 2
 x_dim  = 16#281+2
-Mach = 0.45
-Cl_req = np.asscalar(normalize_y(np.array([0.5]),0))
+
 
 model = NeuralAirfoil(x_dim = x_dim, N_hlayers=n_layers, n_neur=n_neur)
 
@@ -85,80 +83,150 @@ saver_Cl = model.saver
 session_Cl = tf.Session(graph=model.g)
 saver_Cl.restore(session_Cl, './data/NN_Cl.ckpt')
 
-def Cd(x_in):
-    x = np.zeros(x_dim)
-    x[0:14] = x_in[0:14]
-    x[14] = Mach_n
-    x[15] = x_in[14]
-    x = x.reshape(1,x_dim)
+def Cd(x):
     pred = session_Cd.run(model.network,feed_dict={model.X:x})
     return np.asscalar(pred)
 
-def Cl(x_in):
-    x = np.zeros(x_dim)
-    x[0:14] = x_in[0:14]
-    x[14] = Mach_n
-    x[15] = x_in[14]
-    x = x.reshape(1,x_dim) 
+def Cl(x):
     pred = session_Cl.run(model.network,feed_dict={model.X:x})
     return np.asscalar(pred)
 
-def c1(x):
-    return thickness(x)[0]-thickness_constraint[0]
-def c2(x):
-    return thickness(x)[1]-thickness_constraint[1]
-def c3(x):
-    return thickness(x)[2]-thickness_constraint[2]
-def c4(x):
-    return thickness(x)[3]-thickness_constraint[3]
-def c5(x):
-    return thickness(x)[4]-thickness_constraint[4]
-def c6(x):
-    return Cl(x) - Cl_req
-
-con1 = {'type': 'ineq', 'fun': c1}
-con2 = {'type': 'ineq', 'fun': c2}
-con3 = {'type': 'ineq', 'fun': c3}
-con4 = {'type': 'ineq', 'fun': c4}
-con5 = {'type': 'ineq', 'fun': c5}
-con6 = {'type': 'eq', 'fun': c6}
-
-cons = (con1,con2,con3,con4,con5,con6)
-eqcons = [c6]
-ineqcons  = [c1,c2,c3,c4,c5]
+def grad_thick_con():
+    der_c = np.zeros((5,14))
+    maxi = np.amax(x_tr, axis=0)
+    mini = np.amin(x_tr, axis=0)
+    for i in range(5):
+        index = index_constraint[i]
+        for j in range(14):
+            der_c[i,j] = (U[j,index[0]]- U[j,index[1]])*(maxi[j]-mini[j])
+    return der_c
 #%%
+
+def Fd_Cd(x):
+    dx = 1E-4
+    dx_vec = np.zeros((1,16))
+    grad = np.zeros((1,16))
+    for i in range(16):
+        dx_vec[0,i] = dx
+        plus = session_Cd.run(model.network,feed_dict={model.X:x+dx_vec})
+        minus = session_Cd.run(model.network,feed_dict={model.X:x-dx_vec})
+        grad[0,i] = (plus-minus)/(2*dx)
+        dx_vec = np.zeros((1,16))
+    return grad
+def Fd_Cl(x):
+    dx = 1E-6
+    dx_vec = np.zeros((1,16))
+    grad = np.zeros((1,16))
+    for i in range(16):
+        dx_vec[0,i] = dx
+        plus = session_Cl.run(model.network,feed_dict={model.X:x+dx_vec})
+        minus = session_Cl.run(model.network,feed_dict={model.X:x-dx_vec})
+        grad[0,i] = (plus-minus)/(2*dx)
+        dx_vec = np.zeros((1,16))
+    return grad
+x_pr = normalize_x(x_tr[0,:])
+print(session_Cd.run(model.gradient_NN,feed_dict={model.X:x_pr})[0])
+print(session_Cl.run(model.gradient_NN,feed_dict={model.X:x_pr})[0])
+
+#%%
+def objfunc(xdict):
+    modes = xdict['modes']
+    alpha = xdict['alpha']
+    x = np.zeros(x_dim)
+    x[0:14] = modes
+    x[14] = Mach_n
+    x[15] = alpha
+    x = x.reshape(1,x_dim) 
+    funcs = {}
+    funcs['obj'] = Cd(x)
+    funcs['thick_0.1'] = thickness(x)[0]
+    funcs['thick_0.3'] = thickness(x)[1]
+    funcs['thick_0.5'] = thickness(x)[2]
+    funcs['thick_0.7'] = thickness(x)[3]
+    funcs['thick_0.9'] = thickness(x)[4]
+    funcs['Cl'] = Cl(x)
+    fail = False
+    return funcs, fail
+
+def sens(xdict, funcs):
+    modes = xdict['modes']
+    alpha = xdict['alpha']
+    x = np.zeros(x_dim)
+    x[0:14] = modes
+    x[14] = Mach_n
+    x[15] = alpha
+    x = x.reshape(1,x_dim) 
+    funcsSens = {}
+    grad_Cd = session_Cd.run(model.gradient_NN,feed_dict={model.X:x})[0]
+    grad_Cl = session_Cl.run(model.gradient_NN,feed_dict={model.X:x})[0]
+    # grad_Cd = Fd_Cd(x)
+    # grad_Cl = Fd_Cl(x)
+    funcsSens['obj','modes'] = grad_Cd[0,0:14]
+    funcsSens['obj', 'alpha'] = grad_Cd[0,15]
+    funcsSens['Cl','modes'] = grad_Cl[0,0:14]
+    funcsSens['Cl', 'alpha'] = grad_Cl[0,15]
+    funcsSens['thick_0.1','modes'] = grad_thick_con()[0,:]
+    funcsSens['thick_0.1','alpha'] = [0]
+    funcsSens['thick_0.3','modes'] = grad_thick_con()[1,:]
+    funcsSens['thick_0.3','alpha'] = [0]
+    funcsSens['thick_0.5','modes'] = grad_thick_con()[2,:]
+    funcsSens['thick_0.5','alpha'] = [0]
+    funcsSens['thick_0.7','modes'] = grad_thick_con()[3,:]
+    funcsSens['thick_0.7','alpha'] = [0]
+    funcsSens['thick_0.9','modes'] = grad_thick_con()[4,:]
+    funcsSens['thick_0.9','alpha'] = [0]
+    fail = False
+    return funcsSens, fail
+
+Mach = 0.45
+Cl_i = np.array([0.5])
+Cl_req = np.asscalar(normalize_y(Cl_i,0))
 x0_t = np.zeros(16)
-x0_t[:14] = airfoil
 x0_t[14] = Mach
-x0_t[15] = 2
 x0_t = normalize_x(x0_t)
-x0 = np.zeros(15)
-x0[0:14] = x0_t[0,:14]
-x0[14] = x0_t[0,15]
 Mach_n = x0_t[0,14]
-print(Cd(x0))
-print(denormalize_y(np.array([Cl(x0)]),0))
-tol = 1e-8
+low_alpha = None
+up_alpha = None
 
-#%%
-sol = scopt.minimize(Cd, x0, method='SLSQP',constraints =cons ,tol=tol, options={'disp': True})
-# sol = scopt.fmin_slsqp(Cd, x0, eqcons=eqcons, ieqcons = ineqcons)
+optProb = Optimization('naca4412', objfunc)
 
-print(sol.success)
-print(denormalize_y(np.array([sol.fun]),1))
-print(denormalize_y(np.array([Cd(x0)]),1))
-sol_opt = np.zeros(16)
-sol_opt[0:14] = sol.x[0:14]
-sol_opt[15] = sol.x[14]
-sol_opt[14] = Mach_n
-sol_opt = denormalize_x(sol_opt)
-print(sol_opt)
-print(airfoil)
+optProb.addVarGroup('modes', 14, 'c', lower=None, upper=None, value=.5)
+optProb.addVar('alpha', 'c', lower=low_alpha, upper=up_alpha, value=.5)
+
+optProb.addCon('thick_0.1', lower=thickness_constraint[0], upper=None)
+optProb.addCon('thick_0.3', lower=thickness_constraint[1], upper=None)
+optProb.addCon('thick_0.5', lower=thickness_constraint[2], upper=None)
+optProb.addCon('thick_0.7', lower=thickness_constraint[3], upper=None)
+optProb.addCon('thick_0.9', lower=thickness_constraint[4], upper=None)
+optProb.addCon('Cl', lower=Cl_req, upper=Cl_req)
+
+optProb.addObj('obj')
+
+print(optProb)
 #%%
-y_opt = np.dot(sol_opt[0,0:14],U)
+opt = pyoptsparse.SLSQP()
+sol = opt(optProb, sens='FD')
+print(sol)
+#%%
+modes_opt = sol.xStar['modes']
+alpha_opt = sol.xStar['alpha']
+Cd_opt = denormalize_y(sol.fStar,1)
+x0 = np.zeros((1,x_dim))
+x0[0,0:14] = airfoil
+x0[0,14] = Mach 
+x0_n = normalize_x(x0)
+Cd_0 = Cd(x0_n)
+print(Cd_opt, Cd_0)
+x_opt = np.zeros((1,x_dim))
+x_opt[0,0:14] = modes_opt
+x_opt[0,15] = alpha_opt
+x_opt = denormalize_x(x_opt)
+print('alpha', x_opt[0,15])
+y_opt = np.dot(x_opt[0,0:14],U)
 plt.figure()
 plt.axis('equal')
-plt.plot(x_geom,y_opt)
-plt.plot(x_geom,y_airfoil,'--')
+plt.plot(x_geom,y_airfoil,'--',label = 'Base airfoil')
+plt.plot(x_geom,y_opt,label='Optimized')
+plt.legend()
 
 
