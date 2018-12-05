@@ -1,6 +1,6 @@
 #%%
 import numpy as np
-from NN_airofil import NeuralAirfoil
+from NN_airfoil import NeuralAirfoil
 from sklearn.preprocessing import MinMaxScaler
 
 def read_data():
@@ -33,7 +33,6 @@ def read_data():
     y_train_n = scaler.fit_transform(y[:N_train,:]) #normalized data
     y_test_n = scaler.transform(y[N_train:,:]) #normalized data
     return x_train, y_train_n, x_test, y_test_n, y_train_ok, y_test_ok
-
 
 X_train, y_train, X_test, y_test, y_train_ok, y_test_ok = read_data() #Read de data
 
