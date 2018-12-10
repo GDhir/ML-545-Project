@@ -50,37 +50,20 @@ Cd_train = np.reshape(y_train[:,1],[-1,1])
 Cd_test = np.reshape(y_test[:,1],[-1,1])
 Cd_ok = np.reshape(y_train_ok[:,1],[-1,1])
 Cd_test_ok = np.reshape(y_test_ok[:,1],[-1,1])
-
 #%%
 
-alpha = .001
-n_neur = 60
-n_layers = 2
-x_dim  = 16#281+2
-epc = 1000
-save = True
-show = False
+def obj_fun(learning_rate, n_neurons, n_hiddenlayers):
+    epochs = 100
+    verbosity = False
+    #create NN
+    model = NeuralAirfoil(N_hlayers=n_hiddenlayers, n_neur=n_neurons, learning_rate=learning_rate, num_epochs=epochs)
+    #Train the NN
+    model.train_NN(X_train, Cd_train, X_test, Cd_test, Cd_ok, Cd_test_ok, verbosity=verbosity)
+    last_mse = model.training_cost[-1]
+    return last_mse 
 
-#create NN for Cd
-model_Cd = NeuralAirfoil(x_dim = x_dim, N_hlayers=n_layers, n_neur=n_neur, learning_rate=alpha, num_epochs=epc)
-#Train the NN for Cd
-model_Cd.train_NN(X_train, Cd_train, X_test, Cd_test, Cd_ok, Cd_test_ok)
-#generate the plots for Cd
-model_Cd.generate_plot('Cd', show=True, save=save)
-print('Relative error test %',model_Cd.R_error_test[-1])
-print('Relative error train %',model_Cd.R_error_train[-1])
-
-#%%
-model_Cm = NeuralAirfoil(x_dim = x_dim, N_hlayers=n_layers, n_neur=n_neur, learning_rate=alpha, num_epochs=epc)
-model_Cm.train_NN(X_train, Cm_train, X_test, Cm_test, Cm_ok, Cm_test_ok)
-model_Cm.generate_plot('Cm', show=True, save=save)
-print('Relative error test %',model_Cm.R_error_test[-1])
-print('Relative error train %',model_Cm.R_error_train[-1])
-
-alpha = .01
-
-model_Cl = NeuralAirfoil(x_dim = x_dim, N_hlayers=n_layers, n_neur=n_neur, learning_rate=alpha, num_epochs=epc)
-model_Cl.train_NN(X_train, Cl_train, X_test, Cl_test, Cl_ok, Cl_test_ok)
-model_Cl.generate_plot('Cl', show=True, save=save)
-print('Relative error test %',model_Cl.R_error_test[-1])
-print('Relative error train %',model_Cl.R_error_train[-1])
+l_r = 0.001
+neur = 60 
+layers = 2
+last = obj_fun(l_r,neur,layers)
+print(last)

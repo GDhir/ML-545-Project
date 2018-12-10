@@ -23,7 +23,7 @@ class NeuralAirfoil(object):
         self.N_hlayers =  N_hlayers
         self.g = tf.Graph() #graph for TF
         self.num_epochs = num_epochs
-        self.activation_function = tf.nn.relu #Activation function
+        self.activation_function = tf.nn.sigmoid #Activation function
         with self.g.as_default():
             self.model() #initilize model
             self.init_op = tf.global_variables_initializer()
@@ -56,7 +56,7 @@ class NeuralAirfoil(object):
         #Gradient
         self.gradient_NN = tf.gradients(self.network, self.X)
 
-    def train_NN(self, X_train, y_train, X_test, y_test, y_train_ok, y_test_ok, shuffle=False):
+    def train_NN(self, X_train, y_train, X_test, y_test, y_train_ok, y_test_ok,verbosity = True,shuffle=False):
         """
         X_train: input X to train the NN
         y_train: normalized y_train 
@@ -105,8 +105,8 @@ class NeuralAirfoil(object):
             #compute the relative error of the training data
             error_train = np.sqrt(np.sum((self.y_train_ok-y_pred_train_ok)**2))/np.sqrt(np.sum(self.y_train_ok**2))*100
             self.R_error_train.append(error_train)
-            
-            print('Epoch: ', i+1, 'Training cost: ', self.training_cost[-1])
+            if verbosity:
+                print('Epoch: ', i+1, 'Training cost: ', self.training_cost[-1])
         
         end = time.time()
         self.total_time = end-start

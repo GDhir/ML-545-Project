@@ -2,7 +2,7 @@
 import tensorflow as tf
 import numpy as np
 import matplotlib.pyplot as plt
-from NN_airofil import NeuralAirfoil
+from NN_airfoil import NeuralAirfoil
 from sklearn.preprocessing import MinMaxScaler
 import pyoptsparse
 from pyoptsparse import Optimization
@@ -68,7 +68,7 @@ def normalize_y(y, var):
     y_den = scaler.transform(y.reshape(-1,1))
     return y_den
 
-n_neur = 60
+n_neur = 80
 n_layers = 2
 x_dim  = 16#281+2
 
@@ -101,34 +101,6 @@ def grad_thick_con():
             der_c[i,j] = (U[j,index[0]]- U[j,index[1]])*(maxi[j]-mini[j])
     return der_c
 #%%
-
-def Fd_Cd(x):
-    dx = 1E-4
-    dx_vec = np.zeros((1,16))
-    grad = np.zeros((1,16))
-    for i in range(16):
-        dx_vec[0,i] = dx
-        plus = session_Cd.run(model.network,feed_dict={model.X:x+dx_vec})
-        minus = session_Cd.run(model.network,feed_dict={model.X:x-dx_vec})
-        grad[0,i] = (plus-minus)/(2*dx)
-        dx_vec = np.zeros((1,16))
-    return grad
-def Fd_Cl(x):
-    dx = 1E-6
-    dx_vec = np.zeros((1,16))
-    grad = np.zeros((1,16))
-    for i in range(16):
-        dx_vec[0,i] = dx
-        plus = session_Cl.run(model.network,feed_dict={model.X:x+dx_vec})
-        minus = session_Cl.run(model.network,feed_dict={model.X:x-dx_vec})
-        grad[0,i] = (plus-minus)/(2*dx)
-        dx_vec = np.zeros((1,16))
-    return grad
-x_pr = normalize_x(x_tr[0,:])
-print(session_Cd.run(model.gradient_NN,feed_dict={model.X:x_pr})[0])
-print(session_Cl.run(model.gradient_NN,feed_dict={model.X:x_pr})[0])
-
-#%%
 def objfunc(xdict):
     modes = xdict['modes']
     alpha = xdict['alpha']
@@ -159,8 +131,6 @@ def sens(xdict, funcs):
     funcsSens = {}
     grad_Cd = session_Cd.run(model.gradient_NN,feed_dict={model.X:x})[0]
     grad_Cl = session_Cl.run(model.gradient_NN,feed_dict={model.X:x})[0]
-    # grad_Cd = Fd_Cd(x)
-    # grad_Cl = Fd_Cl(x)
     funcsSens['obj','modes'] = grad_Cd[0,0:14]
     funcsSens['obj', 'alpha'] = grad_Cd[0,15]
     funcsSens['Cl','modes'] = grad_Cl[0,0:14]
