@@ -23,7 +23,7 @@ class NeuralAirfoil(object):
         self.N_hlayers =  N_hlayers
         self.g = tf.Graph() #graph for TF
         self.num_epochs = num_epochs
-        self.activation_function = tf.nn.sigmoid #Activation function
+        self.activation_function = tf.nn.relu #Activation function
         with self.g.as_default():
             self.model() #initilize model
             self.init_op = tf.global_variables_initializer()

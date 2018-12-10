@@ -68,7 +68,7 @@ def normalize_y(y, var):
     y_den = scaler.transform(y.reshape(-1,1))
     return y_den
 
-n_neur = 80
+n_neur = 60
 n_layers = 2
 x_dim  = 16#281+2
 
@@ -175,7 +175,7 @@ optProb.addObj('obj')
 print(optProb)
 #%%
 opt = pyoptsparse.SLSQP()
-sol = opt(optProb, sens='FD')
+sol = opt(optProb, sens=sens)
 print(sol)
 #%%
 modes_opt = sol.xStar['modes']
