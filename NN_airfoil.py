@@ -51,7 +51,7 @@ class NeuralAirfoil(object):
         self.cost = tf.reduce_mean(tf.square(self.network-self.y)) # our mean squared error cost function
         
         #optimizer
-        self.optimizer = tf.train.AdamOptimizer(self.learning_rate).minimize(self.cost)
+        self.optimizer = tf.train.GradientDescentOptimizer (self.learning_rate).minimize(self.cost)
 
         #Gradient
         self.gradient_NN = tf.gradients(self.network, self.X)
