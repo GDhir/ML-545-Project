@@ -1,6 +1,6 @@
 #%%
 import numpy as np
-from NN_airofil import NeuralAirfoil
+from NN_airfoil import NeuralAirfoil
 from sklearn.preprocessing import MinMaxScaler
 
 def read_newdata():
@@ -48,8 +48,8 @@ alpha = .001
 n_neur = 60
 n_layers = 2
 x_dim  = 281 #y points
-epc = 1000
-save = True
+epc = 10
+save = False
 show = False
 
 #create NN for Cd
@@ -63,15 +63,15 @@ print('Relative error test %',model_Cd.R_error_test[-1])
 print('Relative error train %',model_Cd.R_error_train[-1])
 
 #%%
-model_Cm = NeuralAirfoil(x_dim = x_dim, N_hlayers=n_layers, n_neur=n_neur, learning_rate=alpha, num_epochs=epc)
-model_Cm.train_NN(X_train, Cm_train, X_test, Cm_test, Cm_ok, Cm_test_ok)
-model_Cm.generate_plot('Cm', show=show, save=save)
-print('Relative error test %',model_Cm.R_error_test[-1])
-print('Relative error train %',model_Cm.R_error_train[-1])
+# model_Cm = NeuralAirfoil(x_dim = x_dim, N_hlayers=n_layers, n_neur=n_neur, learning_rate=alpha, num_epochs=epc)
+# model_Cm.train_NN(X_train, Cm_train, X_test, Cm_test, Cm_ok, Cm_test_ok)
+# model_Cm.generate_plot('Cm', show=show, save=save)
+# print('Relative error test %',model_Cm.R_error_test[-1])
+# print('Relative error train %',model_Cm.R_error_train[-1])
 
 
-model_Cl = NeuralAirfoil(x_dim = x_dim, N_hlayers=n_layers, n_neur=n_neur, learning_rate=alpha, num_epochs=epc)
-model_Cl.train_NN(X_train, Cl_train, X_test, Cl_test, Cl_ok, Cl_test_ok)
-model_Cl.generate_plot('Cl', show=show, save=save)
-print('Relative error test %',model_Cl.R_error_test[-1])
-print('Relative error train %',model_Cl.R_error_train[-1])
+# model_Cl = NeuralAirfoil(x_dim = x_dim, N_hlayers=n_layers, n_neur=n_neur, learning_rate=alpha, num_epochs=epc)
+# model_Cl.train_NN(X_train, Cl_train, X_test, Cl_test, Cl_ok, Cl_test_ok)
+# model_Cl.generate_plot('Cl', show=show, save=save)
+# print('Relative error test %',model_Cl.R_error_test[-1])
+# print('Relative error train %',model_Cl.R_error_train[-1])

@@ -44,12 +44,12 @@ class NeuralAirfoil(object):
         print(conv1.get_shape())
         pool1 = tf.layers.max_pooling2d(inputs=conv1, pool_size = [1,4], strides=[1,4])
         print(pool1.get_shape())
-        conv2 = tf.layers.conv2d(inputs= pool1, filters=8, kernel_size=[2,2], 
+        conv2 = tf.layers.conv2d(inputs= pool1, filters=4, kernel_size=[2,2], 
             padding='same', activation=self.activation_function)
         print(conv2.get_shape())
-        pool2 = tf.layers.max_pooling2d(inputs=conv2, pool_size = [2,5], strides=[2,5])
+        pool2 = tf.layers.max_pooling2d(inputs=conv2, pool_size = [2,7], strides=[2,7])
         print(pool2.get_shape())
-        pool2_flat  = tf.reshape(pool2,[-1,7*8] )
+        pool2_flat  = tf.reshape(pool2,[-1,5*4] )
         input_NN = tf.concat([pool2_flat, self.extra],1)
         #input layer
         layer_1 = tf.layers.dense(inputs=input_NN, units=self.n_neur, activation = self.activation_function,
@@ -71,7 +71,7 @@ class NeuralAirfoil(object):
         self.optimizer = tf.train.AdamOptimizer(self.learning_rate).minimize(self.cost)
 
 
-    def train_NN(self, X_train, y_train, X_test, y_test, y_train_ok, y_test_ok, shuffle=False):
+    def train_NN(self, X_train, y_train, X_test, y_test, y_train_ok, y_test_ok, verbosity = True, tolerance=1E-6,shuffle=False):
         """
         X_train: input X to train the NN
         y_train: normalized y_train 
@@ -89,7 +89,8 @@ class NeuralAirfoil(object):
         self.y_test = y_test
         self.y_train_ok = y_train_ok 
         self.y_test_ok = y_test_ok 
-        self.shuffle  = shuffle 
+        self.shuffle  = shuffle
+        self.tolerance = tolerance
         self.training_cost = [] #list to save the cost
         self.R_error_train = [] #list to save the relative error of the train set
         self.R_error_test = [] #lsit to save the relative error of the test set
@@ -124,9 +125,10 @@ class NeuralAirfoil(object):
             #compute the relative error of the training data
             error_train = np.sqrt(np.sum((self.y_train_ok-y_pred_train_ok)**2))/np.sqrt(np.sum(self.y_train_ok**2))*100
             self.R_error_train.append(error_train)
-            
-            print('Epoch: ', i+1, 'Training cost: ', self.training_cost[-1])
-        
+            if verbosity:
+                print('Epoch: ', i+1, 'Training cost: ', self.training_cost[-1])
+            if np.asarray(self.training_cost[-1])<self.tolerance:
+                break
         end = time.time()
         self.total_time = end-start
         print('====== NN trained, ',self.total_time/60, '[min] ======')
