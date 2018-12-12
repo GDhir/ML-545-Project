@@ -51,12 +51,12 @@ class NeuralAirfoil(object):
         self.cost = tf.reduce_mean(tf.square(self.network-self.y)) # our mean squared error cost function
         
         #optimizer
-        self.optimizer = tf.train.GradientDescentOptimizer (self.learning_rate).minimize(self.cost)
+        self.optimizer = tf.train.AdamOptimizer(self.learning_rate).minimize(self.cost)
 
         #Gradient
         self.gradient_NN = tf.gradients(self.network, self.X)
 
-    def train_NN(self, X_train, y_train, X_test, y_test, y_train_ok, y_test_ok,verbosity = True,shuffle=False):
+    def train_NN(self, X_train, y_train, X_test, y_test, y_train_ok, y_test_ok,tolerance = 1E-6 ,verbosity = True,shuffle=False):
         """
         X_train: input X to train the NN
         y_train: normalized y_train 
@@ -74,7 +74,8 @@ class NeuralAirfoil(object):
         self.y_test = y_test
         self.y_train_ok = y_train_ok 
         self.y_test_ok = y_test_ok 
-        self.shuffle  = shuffle 
+        self.shuffle  = shuffle
+        self.tolerance = tolerance
         self.training_cost = [] #list to save the cost
         self.R_error_train = [] #list to save the relative error of the train set
         self.R_error_test = [] #lsit to save the relative error of the test set
@@ -107,7 +108,8 @@ class NeuralAirfoil(object):
             self.R_error_train.append(error_train)
             if verbosity:
                 print('Epoch: ', i+1, 'Training cost: ', self.training_cost[-1])
-        
+            if np.asarray(self.training_cost[-1])< self.tolerance:
+                break
         end = time.time()
         self.total_time = end-start
         print('====== NN trained, ',self.total_time/60, '[min] ======')

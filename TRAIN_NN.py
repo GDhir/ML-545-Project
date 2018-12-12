@@ -65,7 +65,7 @@ show = False
 #create NN for Cd
 model_Cd = NeuralAirfoil(x_dim = x_dim, N_hlayers=n_layers, n_neur=n_neur, learning_rate=alpha, num_epochs=epc)
 #Train the NN for Cd
-model_Cd.train_NN(X_train, Cd_train, X_test, Cd_test, Cd_ok, Cd_test_ok)
+model_Cd.train_NN(X_train, Cd_train, X_test, Cd_test, Cd_ok, Cd_test_ok,tolerance=1E-5)
 #generate the plots for Cd
 model_Cd.generate_plot('Cd', show=show, save=save)
 print('Relative error test %',model_Cd.R_error_test[-1])
