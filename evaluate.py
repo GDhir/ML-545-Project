@@ -1,32 +1,101 @@
+#%%
 import tensorflow as tf
 import numpy as np
 import matplotlib.pyplot as plt
-import time
-from functions import read_data, neural_net_model_1, denormalize
+from NN_airofil import NeuralAirfoil
+from sklearn.preprocessing import MinMaxScaler
 
-X_train, y_train_n, X_test, y_test_n,  y_train, y_test= read_data()
-Cd_train = np.reshape(y_train[:,2],[-1,1])
-Cd_test = np.reshape(y_test[:,2],[-1,1])
-Cd_test_ok = np.reshape(y_test[:,2],[-1,1])
-Cd_train_ok = np.reshape(y_train[:,2],[-1,1])
-print(min(Cd_train_ok))
-xs = x = tf.placeholder(tf.float32, shape=[None, X_train.shape[1]],name="xs") 
-ys =  tf.placeholder(tf.float32, shape=[None, 1],name="ys")
-output = neural_net_model_1(xs,16)
-cost = tf.reduce_mean(tf.square(output-ys))
-saver = tf.train.Saver()
-with tf.Session() as session:
-    #Load NN
-    saver.restore(session, './data/NN_Cd_1.ckpt')
-    # Evalute test data
-    pred_n = session.run(output,feed_dict={xs:X_test})
-    Mse1 = np.mean((pred_n-y_test_n[:,2])**2)
-    Mse2 = session.run(cost, feed_dict={xs:X_test,ys:Cd_test})
-    print(Mse1,Mse2)
-    plt.figure()
-    plt.plot(range(Cd_test.shape[0]),pred_n,label="Predicted Data")
-    plt.plot(range(Cd_test.shape[0]),Cd_test,label="Original Data")
-    plt.legend(loc='best')
-    plt.ylabel(r'$C_d$')
-    plt.xlabel('Test samples')
-    plt.show()
+
+l_rate = .001
+n_neur = 60
+n_layers = 2
+x_dim  = 16#281+2
+y_dim = 1
+epc = 300
+save = False
+
+model = NeuralAirfoil(x_dim = x_dim, N_hlayers=n_layers, n_neur=n_neur, learning_rate=l_rate, num_epochs=epc)
+
+saver_Cd = model.saver
+session_Cd = tf.Session(graph=model.g)
+saver_Cd.restore(session_Cd,'./data/NN_Cd.ckpt')
+
+saver_Cl = model.saver
+session_Cl = tf.Session(graph=model.g)
+saver_Cl.restore(session_Cl,'./data/NN_Cl.ckpt')
+
+saver_Cm = model.saver
+session_Cm = tf.Session(graph=model.g)
+saver_Cm.restore(session_Cm,'./data/NN_Cm.ckpt')
+
+
+def denormalize_y(y, var):
+        """
+        var: 0 for Cl, 1 for Cd, 2 for Cm
+        """
+        y_tr = np.loadtxt('y_train.txt')
+        scaler = MinMaxScaler()
+        scaler.fit(y_tr[:,var].reshape(-1,1))
+        y_den = scaler.inverse_transform(y.reshape(-1,1))
+        return y_den
+
+def normalize_x(x):
+        x_tr = np.loadtxt('x_train.txt')
+        scaler = MinMaxScaler()
+        scaler.fit(x_tr)
+        x_transf = scaler.transform(x)
+        return x_transf
+
+
+#%%
+
+
+airfoil = np.loadtxt('clarky.coef')
+Ma = 0.45
+alpha = np.linspace(-2, 6, num=20)
+x_eval = np.zeros((len(alpha),16))
+x_eval[:,0:14] = airfoil
+x_eval[:,14] = Ma
+pred_Cd = []
+for i in range(len(alpha)):
+        x_eval[i,15] = alpha[i]
+x_eval = normalize_x(x_eval)
+
+pred_Cd = session_Cd.run(model.network,feed_dict={model.X:x_eval})
+pred_Cd = denormalize_y(pred_Cd, 1)
+
+pred_Cl = session_Cl.run(model.network,feed_dict={model.X:x_eval})
+pred_Cl = denormalize_y(pred_Cl, 0)
+
+pred_Cm = session_Cm.run(model.network,feed_dict={model.X:x_eval})
+pred_Cm = -denormalize_y(pred_Cm, 2)
+
+f = plt.figure(figsize=(25,5))
+f1 = f.add_subplot(132)
+f2 = f.add_subplot(131)
+f3 = f.add_subplot(133)
+
+f1.plot(alpha,pred_Cd*1E4,label="NN")
+f1.set_ylabel(r'$C_d$ (Counts)',fontsize=20)
+f1.set_xlabel(r'$\alpha$',fontsize=20)
+f1.set_xlim([min(alpha),max(alpha)])
+f1.grid()
+
+
+f2.plot(alpha,pred_Cl,label="NN")
+f2.set_ylabel(r'$C_l$',fontsize=20)
+f2.set_xlabel(r'$\alpha$',fontsize=20)
+f2.set_xlim([min(alpha),max(alpha)])
+f2.grid()
+
+f3.plot(alpha,pred_Cm,label="NN")
+f3.set_ylabel(r'$C_m$',fontsize=20)
+f3.set_xlabel(r'$\alpha$',fontsize=20)
+f3.set_ylim([-0.25,0])
+f3.set_xlim([min(alpha),max(alpha)])
+f3.grid()
+
+f.savefig('./data/ClarkY.pdf',bbox_inches='tight')
+
+        
+

@@ -1,3 +1,4 @@
+#%%
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -15,6 +16,7 @@ for i in range(npts):
 f.close()
 
 airfoil = np.loadtxt('new.plt')
+print(samples.shape)
 plt.figure()
 plt.axis('equal')
 plt.plot(airfoil[:,0],airfoil[:,1])
