@@ -2,7 +2,7 @@
 import tensorflow as tf
 import numpy as np
 import matplotlib.pyplot as plt
-from NN_airofil import NeuralAirfoil
+from NN_airfoil import NeuralAirfoil
 from sklearn.preprocessing import MinMaxScaler
 
 

@@ -57,15 +57,16 @@ alpha = .001
 n_neur = 60
 n_layers = 2
 x_dim  = 16#281+2
-epc = 500
-save = False
+epc = 2000
+save = True
 show = False
+tol=2E-6
 
 #%%
 #create NN for Cd
 model_Cd = NeuralAirfoil(x_dim = x_dim, N_hlayers=n_layers, n_neur=n_neur, learning_rate=alpha, num_epochs=epc)
 #Train the NN for Cd
-model_Cd.train_NN(X_train, Cd_train, X_test, Cd_test, Cd_ok, Cd_test_ok,tolerance=1E-5)
+model_Cd.train_NN(X_train, Cd_train, X_test, Cd_test, Cd_ok, Cd_test_ok,tolerance=tol)
 #generate the plots for Cd
 model_Cd.generate_plot('Cd', show=show, save=save)
 print('Relative error test %',model_Cd.R_error_test[-1])
@@ -73,16 +74,17 @@ print('Relative error train %',model_Cd.R_error_train[-1])
 
 #%%
 model_Cm = NeuralAirfoil(x_dim = x_dim, N_hlayers=n_layers, n_neur=n_neur, learning_rate=alpha, num_epochs=epc)
-model_Cm.train_NN(X_train, Cm_train, X_test, Cm_test, Cm_ok, Cm_test_ok)
+model_Cm.train_NN(X_train, Cm_train, X_test, Cm_test, Cm_ok, Cm_test_ok,tolerance=tol)
 model_Cm.generate_plot('Cm', show=show, save=save)
 print('Relative error test %',model_Cm.R_error_test[-1])
 print('Relative error train %',model_Cm.R_error_train[-1])
 
 
+#%%
 alpha = .01
 
 model_Cl = NeuralAirfoil(x_dim = x_dim, N_hlayers=n_layers, n_neur=n_neur, learning_rate=alpha, num_epochs=epc)
-model_Cl.train_NN(X_train, Cl_train, X_test, Cl_test, Cl_ok, Cl_test_ok)
+model_Cl.train_NN(X_train, Cl_train, X_test, Cl_test, Cl_ok, Cl_test_ok,tolerance=2*tol)
 model_Cl.generate_plot('Cl', show=show, save=save)
 print('Relative error test %',model_Cl.R_error_test[-1])
 print('Relative error train %',model_Cl.R_error_train[-1])
