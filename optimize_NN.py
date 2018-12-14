@@ -2,6 +2,7 @@
 import numpy as np
 from NN_airfoil import NeuralAirfoil
 from sklearn.preprocessing import MinMaxScaler
+from genetic_evolve import *
 
 def read_data():
     """
@@ -52,18 +53,41 @@ Cd_ok = np.reshape(y_train_ok[:,1],[-1,1])
 Cd_test_ok = np.reshape(y_test_ok[:,1],[-1,1])
 #%%
 
-def obj_fun(learning_rate, n_neurons, n_hiddenlayers):
-    epochs = 100
+def obj_fun(X):
+    start_time = time.time()
+    learning_rate = X[0]
+    n_hiddenlayers = int(X[1])
+    n_neurons = np.zeros((n_hiddenlayers))
+    for i in range(0,n_hiddenlayers):
+        n_neurons[i] = int(X[i+2])
+
+    epochs = 200
     verbosity = False
     #create NN
     model = NeuralAirfoil(N_hlayers=n_hiddenlayers, n_neur=n_neurons, learning_rate=learning_rate, num_epochs=epochs)
     #Train the NN
-    model.train_NN(X_train, Cd_train, X_test, Cd_test, Cd_ok, Cd_test_ok, verbosity=verbosity)
+    model.train_NN(X_train, Cd_train, X_test, Cd_test, Cd_ok, Cd_test_ok, verbosity=verbosity, tolerance = 2.0E-5)
     last_mse = model.training_cost[-1]
-    return last_mse 
+    elapsed_time = time.time() - start_time
+    
+    totalcost = last_mse[0]/1e-6 + elapsed_time/60.0 + n_hiddenlayers + sum(n_neurons)
+    outputs=[ last_mse[0], elapsed_time, totalcost]
+    # outputs.append(totalcost)
+    # outputs.append(last_mse)
+    # outputs.append(elapsed_time)
+    # print(outputs)
+    return outputs
 
 l_r = 0.001
 neur = 60 
 layers = 2
-last = obj_fun(l_r,neur,layers)
-print(last)
+
+num_cores = multiprocessing.cpu_count()
+
+evolution = Genetic_Opt(population_size= num_cores*2 - 1, ngenes=8, datatype = [float, int,int,int,int,int,int, int], lbound = [0.00001, 1, 1, 1, 1, 1, 1, 1], ubound = [0.1, 6, 200, 200, 200, 200, 200, 200], fitfun=obj_fun, max_mutation_rate=1, max_mutation_size=5, history_filename='cd_train_history_multilayer10.csv')
+evolution.initial_population([0.001, 3, 30,30,30,30,30,30])
+evolution.evolve(50)
+
+
+# last = obj_fun(l_r,neur,layers)
+# print(last)

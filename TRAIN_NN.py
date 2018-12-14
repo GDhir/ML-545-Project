@@ -53,9 +53,9 @@ Cd_test_ok = np.reshape(y_test_ok[:,1],[-1,1])
 
 #%%
 
-alpha = .001
-n_neur = 60
-n_layers = 2
+alpha = 5.9e-4
+n_neur = 158
+n_layers = 4
 x_dim  = 16#281+2
 epc = 2000
 save = True
